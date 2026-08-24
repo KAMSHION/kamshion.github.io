@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>邮箱验证码</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        input, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            cursor: pointer;
+            background: #0078d4;
+            color: #fff;
+            border: none;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .row {
+            margin-bottom: 12px;
+        }
+        #msg {
+            min-height: 1.5em;
+            color: #333;
+        }
+        #timer {
+            color: #d9534f;
+        }
+    </style>
+</head>
+<body>
+
+    <h3>邮箱验证码</h3>
+    <p style="color:#666;">输入邮箱，点击发送获取6位验证码</p>
+
+    <div class="row">
+        <input type="email" id="emailInput" placeholder="your@email.com" style="width:70%;" />
+        <button id="sendBtn" onclick="sendCode()">发送</button>
+    </div>
+
+    <div class="row">
+        <input type="text" id="codeInput" placeholder="输入验证码" style="width:70%;" />
+        <button onclick="verify()">验证</button>
+    </div>
+
+    <div id="msg"></div>
+    <div id="timer"></div>
+
+    <script>
+        // ===== 配置参数（已固定） =====
+        const SERVICE_ID = 'service_j4bucqo';
+        const TEMPLATE_ID = 'template_o1cztjg';
+        const PUBLIC_KEY = 'rGEorGcHSG7qUCue9';
+        // ==============================
+
+        emailjs.init(PUBLIC_KEY);
+
+        let currentCode = '';
+        let codeTimestamp = 0;          // 验证码生成的时间戳（毫秒）
+        let cooldownTimer = null;       // 倒计时定时器句柄
+        const COOLDOWN_SECONDS = 300;   // 5分钟
+
+        const sendBtn = document.getElementById('sendBtn');
+        const emailInput = document.getElementById('emailInput');
+        const msgEl = document.getElementById('msg');
+        const timerEl = document.getElementById('timer');
+
+        function sendCode() {
+            const email = emailInput.value.trim();
+            if (!email) {
+                alert('请先输入邮箱地址');
+                return;
+            }
+
+            // 生成6位验证码
+            currentCode = Math.floor(100000 + Math.random() * 900000).toString();
+            codeTimestamp = Date.now();
+
+            // 发送邮件
+            emailjs.send(SERVICE_ID, TEMPLATE_ID, {
+                to_email: email,
+                code: currentCode
+            })
+            .then(() => {
+                msgEl.textContent = '发送成功，请查看邮箱（包括垃圾箱）';
+            })
+            .catch((err) => {
+                // 发送失败时显示验证码，方便调试
+                msgEl.textContent = '发送失败，当前验证码为：' + currentCode + '（可直接复制验证）';
+                console.error('EmailJS error:', err);
+            });
+
+            // 禁用发送按钮并开始倒计时
+            sendBtn.disabled = true;
+            let remaining = COOLDOWN_SECONDS;
+            timerEl.textContent = '请等待 ' + remaining + ' 秒后重试';
+            if (cooldownTimer) clearInterval(cooldownTimer);
+            cooldownTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(cooldownTimer);
+                    cooldownTimer = null;
+                    timerEl.textContent = '';
+                    sendBtn.disabled = false;
+                } else {
+                    timerEl.textContent = '请等待 ' + remaining + ' 秒后重试';
+                }
+            }, 1000);
+        }
+
+        function verify() {
+            const input = document.getElementById('codeInput').value.trim();
+            if (!input) {
+                alert('请输入验证码');
+                return;
+            }
+
+            // 检查验证码是否过期（5分钟）
+            const now = Date.now();
+            const elapsed = (now - codeTimestamp) / 1000; // 秒
+            if (elapsed > COOLDOWN_SECONDS) {
+                alert('验证码已过期（超过5分钟），请重新获取');
+                // 清空当前验证码，防止继续使用
+                currentCode = '';
+                return;
+            }
+
+            if (input === currentCode) {
+                alert('验证通过');
+                // 验证成功后清空验证码，防止重复使用
+                currentCode = '';
+            } else {
+                alert('验证码错误');
+            }
+        }
+    </script>
+
+</body>
+</html>
