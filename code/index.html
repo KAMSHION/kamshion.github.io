@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>邮箱验证码</title>
+    <title>验证你的邮箱</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
     </script>
     <style>
@@ -35,8 +35,8 @@
 </head>
 <body>
 
-    <h3>邮箱验证码</h3>
-    <p>输入邮箱，系统将先检查有效性，通过后再发送验证码</p>
+    <h3>验证你的邮箱</h3>
+    <p>输入邮箱，程序将先检查有效性，通过后再发送验证码</p>
 
     <div class="row">
         <input type="email" id="emailInput" placeholder="your@email.com" style="width:70%;" />
@@ -165,7 +165,7 @@
             const now = Date.now();
             const elapsed = (now - codeTimestamp) / 1000;
             if (elapsed > COOLDOWN_SECONDS) {
-                alert('验证码已过期（超过5分钟），请重新获取');
+                alert('验证码已过期，请重新获取');
                 currentCode = '';
                 return;
             }
