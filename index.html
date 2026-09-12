@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAMSHION(kamshion.github.io)</title>
+    <style>
+        :root {
+            --bg-start: #020817;
+            --bg-end: #0f172a;
+            --bg-glow: rgba(103, 232, 249, 0.18);
+            --card-bg: rgba(15, 23, 42, 0.72);
+            --card-border: rgba(148, 163, 184, 0.2);
+            --primary: #67e8f9;
+            --text: #e2e8f0;
+            --muted: #cbd5e1;
+            --shadow: rgba(15, 23, 42, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top left, var(--bg-glow), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.18), transparent 25%),
+                linear-gradient(135deg, var(--bg-start), var(--bg-end));
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+        }
+
+        .outer-shell {
+            width: min(1200px, 96vw);
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.45), 0 0 30px rgba(103, 232, 249, 0.08);
+            backdrop-filter: blur(14px);
+        }
+
+        .container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            width: 100%;
+            padding: 2.2rem 2rem 2rem;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.68));
+            border: 1px solid var(--card-border);
+            border-radius: 22px;
+            box-shadow: 0 20px 45px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .avatar-card {
+            padding: 1.2rem;
+        }
+
+        .avatar-wrap {
+            width: min(220px, 60vw);
+            aspect-ratio: 1;
+            margin: 0 auto;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 2px solid rgba(103, 232, 249, 0.55);
+            box-shadow: 0 12px 30px rgba(103, 232, 249, 0.2), 0 0 25px rgba(103, 232, 249, 0.12);
+            background: #0b1120;
+        }
+
+        .avatar-wrap img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .links-card {
+            padding: 1.5rem 1.25rem;
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .link-card {
+            display: block;
+            padding: 1rem 0.9rem;
+            background: rgba(148, 163, 184, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 16px;
+            color: var(--text);
+            text-decoration: none;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            min-height: 100px;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(103, 232, 249, 0.7);
+            background: rgba(103, 232, 249, 0.08);
+            box-shadow: 0 0 20px rgba(103, 232, 249, 0.12);
+        }
+
+        .link-card strong {
+            display: block;
+            font-size: 1.08rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .link-card span {
+            font-size: 0.82rem;
+            color: var(--muted);
+            word-break: break-all;
+        }
+
+        .email-card {
+            grid-column: auto;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(2.6rem, 5vw, 4.2rem);
+            letter-spacing: 0.08em;
+            line-height: 1.2;
+            font-weight: 800;
+            background: linear-gradient(90deg, #a5f3fc, #67e8f9, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            margin: 1rem 0 0;
+            font-size: clamp(1.05rem, 2vw, 1.7rem);
+            line-height: 1.6;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        @media (max-width: 640px) {
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="outer-shell">
+        <div class="container">
+            <div class="card avatar-card">
+                <div class="avatar-wrap">
+                    <img src="KAMSHION.jpeg" alt="KAMSHION avatar">
+                </div>
+            </div>
+
+            <div class="card">
+                <h1>KAMSHION</h1>
+                <h2>你好！我是 KAMSHION，欢迎你来到这里！</h2>
+            </div>
+
+            <div class="card links-card">
+                <div class="links-grid">
+                    <a class="link-card" href="https://github.com/kamshion" target="_blank" rel="noopener noreferrer">
+                        <strong>我的GitHub账号</strong>
+                        <span>https://github.com/kamshion</span>
+                    </a>
+                    <a class="link-card" href="https://space.bilibili.com/3546907207011146" target="_blank" rel="noopener noreferrer">
+                        <strong>我的Bilibili账号</strong>
+                        <span>https://space.bilibili.com/3546907207011146</span>
+                    </a>
+                    <button class="link-card email-card" type="button" onclick="copyEmail(this)" aria-label="复制邮箱">
+                        <strong>我的邮箱</strong>
+                        <span>kamshion@outlook.com</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyEmail(button) {
+            const email = 'kamshion@outlook.com';
+            const originalText = '<strong>我的邮箱</strong><span>' + email + '</span>';
+            const successText = '<strong>已复制</strong><span>' + email + '</span>';
+
+            function setCopiedState() {
+                button.innerHTML = successText;
+                setTimeout(function () {
+                    button.innerHTML = originalText;
+                }, 1200);
+            }
+
+            function fallbackCopy() {
+                const textarea = document.createElement('textarea');
+                textarea.value = email;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, email.length);
+
+                try {
+                    const copied = document.execCommand('copy');
+                    if (copied) {
+                        setCopiedState();
+                    } else {
+                        alert('复制失败，请手动复制：' + email);
+                    }
+                } catch (error) {
+                    alert('复制失败，请手动复制：' + email);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(email)
+                    .then(function () {
+                        setCopiedState();
+                    })
+                    .catch(function () {
+                        fallbackCopy();
+                    });
+                return;
+            }
+
+            fallbackCopy();
+        }
+    </script>
+</body>
+</html>
