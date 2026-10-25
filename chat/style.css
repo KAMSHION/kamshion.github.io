@@ -1,0 +1,23 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+body { background: #f0f2f5; height: 100vh; display: flex; justify-content: center; align-items: center; }
+
+/* 登录面板 */
+#auth-panel { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 300px; display: flex; flex-direction: column; gap: 15px; }
+#auth-panel h2 { text-align: center; color: #333; }
+#auth-panel input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+.btn-group { display: flex; gap: 10px; }
+.btn-group button { flex: 1; padding: 10px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; font-weight: bold; }
+.btn-group button:nth-child(2) { background: #28a745; }
+#auth-msg { color: red; font-size: 14px; text-align: center; }
+
+/* 聊天面板 */
+#chat-panel { width: 100%; max-width: 600px; height: 80vh; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+#header { background: #007bff; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+#logout-btn { background: transparent; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+#messages { flex: 1; padding: 15px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 10px; }
+.message { max-width: 80%; padding: 8px 12px; border-radius: 8px; background: white; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
+.message.mine { align-self: flex-end; background: #dcf8c6; }
+.message .sender { font-size: 12px; color: #666; margin-bottom: 4px; }
+#input-area { display: flex; padding: 10px; background: #f0f0f0; gap: 10px; }
+#msg-input { flex: 1; height: 60px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: none; outline: none; }
+#send-btn { padding: 0 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
