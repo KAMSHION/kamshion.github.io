@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="day">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>极简聊窗</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section id="auth-panel" aria-labelledby="auth-title">
+      <div class="brand-mark" aria-hidden="true">聊</div>
+      <p class="eyebrow">WELCOME TO</p>
+      <h1 id="auth-title">极简聊窗</h1>
+      <p class="auth-description">登录后加入对话，和大家分享此刻。</p>
+
+      <form id="auth-form">
+        <label for="account">账户名</label>
+        <input type="text" id="account" placeholder="请输入账户名" maxlength="30" pattern="[A-Za-z0-9_$]+" title="账户名只能包含大小写英文字母、数字、下划线和美元符号（$）" autocomplete="username" required>
+        <label for="password">密码</label>
+        <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password" required>
+        <div class="btn-group">
+          <button type="submit" class="primary-btn" data-auth-action="login">登录</button>
+          <button type="button" class="secondary-btn" id="show-register-btn">注册新账号</button>
+        </div>
+        <p id="auth-msg" role="status" aria-live="polite"></p>
+      </form>
+      <p class="auth-footnote">请使用账户名登录</p>
+    </section>
+
+    <section id="register-panel" aria-labelledby="register-title" hidden>
+      <div class="brand-mark" aria-hidden="true">聊</div>
+      <p class="eyebrow">CREATE ACCOUNT</p>
+      <h1 id="register-title">创建账号</h1>
+      <p class="auth-description">设置登录账户名和聊天室显示名称。</p>
+
+      <form id="register-form">
+        <label for="register-account">账户名（唯一）</label>
+        <input type="text" id="register-account" placeholder="用于登录，不能与他人重复" maxlength="30" pattern="[A-Za-z0-9_$]+" title="账户名只能包含大小写英文字母、数字、下划线和美元符号（$）" autocomplete="username" required>
+        <label for="display-name">用户名（对外展示）</label>
+        <input type="text" id="display-name" placeholder="其他成员看到的名称" maxlength="20" autocomplete="nickname" required>
+        <label for="register-password">密码</label>
+        <input type="password" id="register-password" placeholder="请输入密码" autocomplete="new-password" required>
+        <label for="confirm-password">确认密码</label>
+        <input type="password" id="confirm-password" placeholder="请再次输入密码" autocomplete="new-password" required>
+        <div class="btn-group">
+          <button type="button" class="secondary-btn" id="back-to-login-btn">返回登录</button>
+          <button type="submit" class="primary-btn" id="confirm-register-btn">确认注册</button>
+        </div>
+        <p id="register-msg" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="chat-panel" aria-label="极简聊窗" style="display: none;">
+      <header id="header">
+        <div class="chat-heading">
+          <div class="brand-mark small" aria-hidden="true">聊</div>
+          <div>
+            <h1>极简聊窗</h1>
+            <p>
+              <span class="status-dot"></span><span id="connection-status">正在连接...</span>
+              <span class="online-count">· <span id="online-count">0</span> 人在线</span>
+            </p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span id="current-user"></span>
+          <button id="avatar-btn" type="button" onclick="document.getElementById('avatar-input').click()">更换头像</button>
+          <input type="file" id="avatar-input" accept="image/*" aria-label="选择头像" hidden onchange="uploadAvatar(this)">
+          <button id="members-btn" type="button">成员</button>
+          <button id="change-name-btn" type="button">更改用户名</button>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">切换到极夜</button>
+          <button id="logout-btn" type="button" onclick="logout()">退出</button>
+        </div>
+      </header>
+      <div id="messages" aria-live="polite" aria-label="聊天消息">
+        <div class="empty-state" id="empty-state">
+          <span class="empty-icon" aria-hidden="true">✦</span>
+          <strong>这里暂时还没有消息</strong>
+          <span>发送第一条消息，开启对话吧。</span>
+        </div>
+      </div>
+      <form id="message-form">
+        <div id="input-area">
+          <div class="composer">
+            <textarea id="msg-input" placeholder="说点什么吧..." maxlength="300" aria-label="输入消息"></textarea>
+            <div class="composer-footer">
+              <span>Enter 发送 · Shift + Enter 换行</span>
+              <span id="char-count">0 / 300</span>
+            </div>
+          </div>
+          <button id="send-btn" type="submit" aria-label="发送消息">
+            <span>发送</span><span aria-hidden="true">↑</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <dialog id="members-dialog" aria-labelledby="members-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="members-title">极简聊窗成员</h2>
+          <p id="members-count">正在加载...</p>
+        </div>
+        <button id="members-close" type="button" aria-label="关闭成员列表">×</button>
+      </div>
+      <div id="members-list" aria-live="polite"></div>
+    </dialog>
+
+    <dialog id="username-dialog" aria-labelledby="username-dialog-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="username-dialog-title">更改用户名</h2>
+          <p>新用户名将显示给聊天室所有成员</p>
+        </div>
+        <button id="username-dialog-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="username-form" class="username-form">
+        <label for="new-display-name">新用户名</label>
+        <input id="new-display-name" type="text" maxlength="20" autocomplete="nickname" required>
+        <p id="username-msg" role="status" aria-live="polite"></p>
+        <div class="btn-group">
+          <button id="username-cancel-btn" type="button" class="secondary-btn">取消</button>
+          <button id="username-save-btn" type="submit" class="primary-btn">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="mute-dialog" aria-labelledby="mute-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="mute-title">将用户禁言</h2>
+          <p>设置禁言时长，单位为分钟</p>
+        </div>
+        <button id="mute-dialog-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="mute-form" class="username-form">
+        <label id="mute-duration-label" for="mute-duration">禁言用户，时长（min）</label>
+        <input id="mute-duration" type="number" min="1" step="1" placeholder="输入分钟数（min）" required>
+        <label for="mute-reason">理由</label>
+        <textarea id="mute-reason" maxlength="200" rows="3" placeholder="请填写禁言理由" required></textarea>
+        <p id="mute-msg" role="status" aria-live="polite"></p>
+        <div class="btn-group">
+          <button id="mute-cancel-btn" type="button" class="secondary-btn">取消</button>
+          <button id="mute-confirm-btn" type="submit" class="primary-btn">确认</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="unmute-dialog" aria-labelledby="unmute-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="unmute-title">解除禁言</h2>
+          <p id="unmute-description">确认解除该成员的禁言吗？</p>
+        </div>
+        <button id="unmute-dialog-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="username-form">
+        <p id="unmute-msg" role="status" aria-live="polite"></p>
+        <div class="btn-group">
+          <button id="unmute-cancel-btn" type="button" class="secondary-btn">取消</button>
+          <button id="unmute-confirm-btn" type="button" class="primary-btn">确认</button>
+        </div>
+      </div>
+    </dialog>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
