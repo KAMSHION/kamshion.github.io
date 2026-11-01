@@ -47,7 +47,7 @@ export async function onRequest(context) {
       if (hash !== user.password_hash) return json({ error: '账户名或密码错误' }, 401);
       const sessionId = crypto.randomUUID();
       await db.prepare("INSERT INTO sessions (session_id, user_id, role, last_seen) VALUES (?, ?, ?, ?)").bind(sessionId, user.id, user.role, Date.now()).run();
-      return new Response(JSON.stringify({ success: true, displayName: user.display_name, userId: user.id, role: user.role, sessionId }), {
+      return new Response(JSON.stringify({ success: true, account: user.account, displayName: user.display_name, userId: user.id, role: user.role, sessionId }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Set-Cookie': `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax` }
       });
@@ -59,6 +59,33 @@ export async function onRequest(context) {
     const session = await db.prepare("SELECT * FROM sessions WHERE session_id = ?").bind(sessionId).first();
     if (!session) return json({ error: '会话已过期，请重新登录' }, 401);
 
+    if (action === 'logout') {
+      await db.prepare("DELETE FROM sessions WHERE session_id = ?").bind(sessionId).run();
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': 'session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax'
+        }
+      });
+    }
+
+    if (action === 'changePassword') {
+      const { current_password, new_password } = await request.json();
+      if (typeof current_password !== 'string' || !current_password || typeof new_password !== 'string' || !new_password) {
+        return json({ error: '请完整填写当前密码和新密码' }, 400);
+      }
+      if (new_password.length > 128) return json({ error: '新密码不能超过128个字符' }, 400);
+      const user = await db.prepare("SELECT id, password_hash, salt FROM users WHERE id = ?").bind(session.user_id).first();
+      if (!user) return json({ error: '用户不存在' }, 404);
+      const currentHash = await hashPassword(current_password, user.salt);
+      if (currentHash !== user.password_hash) return json({ error: '当前密码不正确' }, 403);
+      const newSalt = crypto.randomUUID();
+      const newHash = await hashPassword(new_password, newSalt);
+      await db.prepare("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?").bind(newHash, newSalt, user.id).run();
+      return json({ success: true });
+    }
+
     if (action === 'heartbeat') {
       await db.prepare("UPDATE sessions SET last_seen = ? WHERE session_id = ?").bind(Date.now(), sessionId).run();
       await db.prepare("DELETE FROM sessions WHERE last_seen < ?").bind(Date.now() - 90000).run();
@@ -69,7 +96,7 @@ export async function onRequest(context) {
     if (action === 'getUsers') {
       const onlineSince = Date.now() - 90000;
       const { results } = await db.prepare(`
-        SELECT users.id, users.display_name, users.avatar_base64, users.role,
+        SELECT users.id, users.account, users.display_name, users.avatar_base64, users.role,
           (SELECT muted_until FROM user_mutes WHERE user_id = users.id) AS muted_until,
           EXISTS(
             SELECT 1 FROM sessions
@@ -79,7 +106,9 @@ export async function onRequest(context) {
         ORDER BY CASE users.role
           WHEN 'super_admin' THEN 0
           WHEN 'admin' THEN 1
-          ELSE 2
+          WHEN 'ai_admin' THEN 1
+          WHEN 'ai' THEN 2
+          ELSE 3
         END, users.display_name COLLATE NOCASE
       `).bind(onlineSince).all();
       const online = await db.prepare("SELECT COUNT(DISTINCT user_id) AS count FROM sessions WHERE last_seen > ?").bind(onlineSince).first();
@@ -103,7 +132,7 @@ export async function onRequest(context) {
 
     if (action === 'muteUser') {
       const moderator = await db.prepare("SELECT display_name, role FROM users WHERE id = ?").bind(session.user_id).first();
-      if (!moderator || !['super_admin', 'admin'].includes(moderator.role)) return json({ error: '没有禁言权限' }, 403);
+      if (!moderator || !['super_admin', 'admin', 'ai_admin'].includes(moderator.role)) return json({ error: '没有禁言权限' }, 403);
       const { user_id, duration_minutes, reason } = await request.json();
       const userId = Number(user_id);
       const durationMinutes = Number(duration_minutes);
@@ -116,8 +145,8 @@ export async function onRequest(context) {
       if (!Number.isSafeInteger(mutedUntil)) return json({ error: '禁言时长过长' }, 400);
       const target = await db.prepare("SELECT id, display_name, role FROM users WHERE id = ?").bind(userId).first();
       if (!target) return json({ error: '成员不存在' }, 404);
-      if (target.role === 'super_admin' || (moderator.role === 'admin' && target.role !== 'user')) {
-        return json({ error: moderator.role === 'admin' ? '管理只能禁言普通用户' : '不能禁言超管' }, 403);
+      if (target.role === 'super_admin' || (['admin', 'ai_admin'].includes(moderator.role) && !['user', 'ai'].includes(target.role))) {
+        return json({ error: ['admin', 'ai_admin'].includes(moderator.role) ? '管理只能禁言普通用户或AI用户' : '不能禁言超管' }, 403);
       }
       const notificationText = JSON.stringify({
         type: 'moderation',
@@ -141,14 +170,14 @@ export async function onRequest(context) {
 
     if (action === 'unmuteUser') {
       const moderator = await db.prepare("SELECT display_name, role FROM users WHERE id = ?").bind(session.user_id).first();
-      if (!moderator || !['super_admin', 'admin'].includes(moderator.role)) return json({ error: '没有解除禁言权限' }, 403);
+      if (!moderator || !['super_admin', 'admin', 'ai_admin'].includes(moderator.role)) return json({ error: '没有解除禁言权限' }, 403);
       const { user_id } = await request.json();
       const userId = Number(user_id);
       if (!Number.isSafeInteger(userId) || userId <= 0) return json({ error: '成员无效' }, 400);
       const target = await db.prepare("SELECT id, display_name, role FROM users WHERE id = ?").bind(userId).first();
       if (!target) return json({ error: '成员不存在' }, 404);
-      if (target.role === 'super_admin' || (moderator.role === 'admin' && target.role !== 'user')) {
-        return json({ error: moderator.role === 'admin' ? '管理只能解除普通用户的禁言' : '不能解除超管的禁言' }, 403);
+      if (target.role === 'super_admin' || (['admin', 'ai_admin'].includes(moderator.role) && !['user', 'ai'].includes(target.role))) {
+        return json({ error: ['admin', 'ai_admin'].includes(moderator.role) ? '管理只能解除普通用户或AI用户的禁言' : '不能解除超管的禁言' }, 403);
       }
       const mute = await db.prepare("SELECT muted_until FROM user_mutes WHERE user_id = ?").bind(userId).first();
       if (!mute || mute.muted_until <= Date.now()) return json({ error: '该成员当前未被禁言' }, 400);
@@ -201,8 +230,22 @@ export async function onRequest(context) {
     }
 
     if (action === 'sendMessage') {
-      const { text } = await request.json();
-      if (!text || text.length > 300) return json({ error: '消息不能为空且不能超过300字' }, 400);
+      const { text, quote } = await request.json();
+      const messageText = typeof text === 'string' ? text.trim() : '';
+      if (!messageText || messageText.length > 300) return json({ error: '消息不能为空且不能超过300字' }, 400);
+      let storedText = messageText;
+      if (quote !== undefined && quote !== null) {
+        const quoteName = typeof quote.display_name === 'string' ? quote.display_name.trim() : '';
+        const quoteText = typeof quote.text === 'string' ? quote.text : '';
+        if (!quoteName || quoteName.length > 20 || !quoteText || quoteText.length > 300) {
+          return json({ error: '引用消息无效' }, 400);
+        }
+        storedText = JSON.stringify({
+          type: 'chat_quote_v1',
+          quote: { display_name: quoteName, text: quoteText },
+          text: messageText
+        });
+      }
       const mute = await db.prepare("SELECT muted_until FROM user_mutes WHERE user_id = ?").bind(session.user_id).first();
       if (mute && mute.muted_until > Date.now()) {
         return json({ error: `你已被禁言，${new Date(mute.muted_until).toLocaleString('zh-CN')} 后可以发言` }, 403);
@@ -210,7 +253,7 @@ export async function onRequest(context) {
       if (mute) await db.prepare("DELETE FROM user_mutes WHERE user_id = ?").bind(session.user_id).run();
       const user = await db.prepare("SELECT display_name FROM users WHERE id = ?").bind(session.user_id).first();
       if (!user) return json({ error: '用户不存在' }, 404);
-      await db.prepare("INSERT INTO messages (user_id, display_name, text, created_at) VALUES (?, ?, ?, ?)").bind(session.user_id, user.display_name, text, Date.now()).run();
+      await db.prepare("INSERT INTO messages (user_id, display_name, text, created_at) VALUES (?, ?, ?, ?)").bind(session.user_id, user.display_name, storedText, Date.now()).run();
       await db.prepare("DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT 50)").run();
       return json({ success: true });
     }

@@ -27,6 +27,11 @@
         <p id="auth-msg" role="status" aria-live="polite"></p>
       </form>
       <p class="auth-footnote">请使用账户名登录</p>
+      <footer class="project-support">
+        支持或改编这个项目？<a href="https://github.com/KAMSHION/chat" target="_blank" rel="noopener noreferrer">给 GitHub 仓库点个 Star</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://space.bilibili.com/3546907207011146" target="_blank" rel="noopener noreferrer">反馈 BUG 和学习交流</a>
+      </footer>
     </section>
 
     <section id="register-panel" aria-labelledby="register-title" hidden>
@@ -50,6 +55,9 @@
         </div>
         <p id="register-msg" role="status" aria-live="polite"></p>
       </form>
+      <footer class="project-support">
+        支持或改编这个项目？<a href="https://github.com/KAMSHION/chat" target="_blank" rel="noopener noreferrer">给 GitHub 仓库点个 Star</a>
+      </footer>
     </section>
 
     <section id="chat-panel" aria-label="极简聊窗" style="display: none;">
@@ -65,13 +73,11 @@
           </div>
         </div>
         <div class="header-actions">
-          <span id="current-user"></span>
-          <button id="avatar-btn" type="button" onclick="document.getElementById('avatar-input').click()">更换头像</button>
-          <input type="file" id="avatar-input" accept="image/*" aria-label="选择头像" hidden onchange="uploadAvatar(this)">
           <button id="members-btn" type="button">成员</button>
-          <button id="change-name-btn" type="button">更改用户名</button>
-          <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">切换到极夜</button>
-          <button id="logout-btn" type="button" onclick="logout()">退出</button>
+          <button id="my-btn" class="my-button" type="button" aria-label="打开我的资料">
+            <span id="my-button-avatar" class="my-button-avatar"></span>
+            <span id="my-button-name" class="my-button-name"></span>
+          </button>
         </div>
       </header>
       <div id="messages" aria-live="polite" aria-label="聊天消息">
@@ -81,9 +87,19 @@
           <span>发送第一条消息，开启对话吧。</span>
         </div>
       </div>
+      <div id="message-context-menu" class="message-context-menu" role="menu" hidden>
+        <button id="quote-message-btn" type="button" role="menuitem">引用</button>
+      </div>
       <form id="message-form">
         <div id="input-area">
           <div class="composer">
+            <div id="reply-preview" class="reply-preview" hidden>
+              <div class="reply-preview-content">
+                <span id="reply-preview-label">引用</span>
+                <span id="reply-preview-text"></span>
+              </div>
+              <button id="reply-cancel-btn" type="button" aria-label="取消引用">×</button>
+            </div>
             <textarea id="msg-input" placeholder="说点什么吧..." maxlength="300" aria-label="输入消息"></textarea>
             <div class="composer-footer">
               <span>Enter 发送 · Shift + Enter 换行</span>
@@ -108,23 +124,98 @@
       <div id="members-list" aria-live="polite"></div>
     </dialog>
 
-    <dialog id="username-dialog" aria-labelledby="username-dialog-title">
+    <dialog id="my-dialog" aria-labelledby="my-dialog-title">
       <div class="members-dialog-header">
         <div>
-          <h2 id="username-dialog-title">更改用户名</h2>
-          <p>新用户名将显示给聊天室所有成员</p>
+          <h2 id="my-dialog-title">我的</h2>
+          <p>管理你的个人资料</p>
         </div>
-        <button id="username-dialog-close" type="button" aria-label="关闭">×</button>
+        <button id="my-dialog-close" type="button" aria-label="关闭">×</button>
       </div>
-      <form id="username-form" class="username-form">
-        <label for="new-display-name">新用户名</label>
-        <input id="new-display-name" type="text" maxlength="20" autocomplete="nickname" required>
-        <p id="username-msg" role="status" aria-live="polite"></p>
+      <div class="my-profile">
+        <div class="my-profile-identity">
+          <button id="my-profile-avatar" class="my-profile-avatar" type="button" aria-label="点击更改头像">
+            <span id="my-profile-avatar-image" class="my-profile-avatar-image"></span>
+            <span class="my-profile-avatar-edit" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+            </span>
+          </button>
+          <div class="my-profile-details">
+            <div class="my-profile-name-row">
+              <strong id="my-profile-name"></strong>
+              <button id="my-name-edit-btn" class="icon-button" type="button" aria-label="更改用户名">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <div class="my-profile-role-row"><span id="my-profile-role" class="role-badges"></span></div>
+            <p class="my-account-line">账户名：<span id="my-account"></span></p>
+          </div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" aria-label="选择头像" hidden onchange="uploadAvatar(this)">
+        <form id="my-name-edit-form" class="my-name-edit-form" hidden>
+          <label for="my-name-input">新用户名</label>
+          <input id="my-name-input" type="text" maxlength="20" autocomplete="nickname" required>
+          <p id="my-name-msg" role="status" aria-live="polite"></p>
+          <div class="btn-group">
+            <button id="my-name-cancel-btn" type="button" class="secondary-btn">取消</button>
+            <button id="my-name-save-btn" type="submit" class="primary-btn">保存</button>
+          </div>
+        </form>
+        <section class="my-preferences" aria-labelledby="my-preferences-title">
+          <h3 id="my-preferences-title">显示偏好</h3>
+          <div class="my-preference-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">切换到极夜</button>
+            <button id="language-toggle" class="language-toggle" type="button" aria-label="切换到英文">English</button>
+          </div>
+        </section>
+        <div class="my-profile-actions">
+          <button id="change-password-btn" class="secondary-btn" type="button">修改密码</button>
+          <button id="my-logout-btn" class="secondary-btn" type="button">退出登录</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="change-password-dialog" aria-labelledby="change-password-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="change-password-title">修改密码</h2>
+          <p>请先验证当前密码</p>
+        </div>
+        <button id="change-password-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="change-password-form" class="username-form">
+        <label for="current-password">当前密码</label>
+        <input id="current-password" type="password" autocomplete="current-password" required>
+        <label for="new-password">新密码</label>
+        <input id="new-password" type="password" maxlength="128" autocomplete="new-password" required>
+        <label for="confirm-new-password">确认新密码</label>
+        <input id="confirm-new-password" type="password" maxlength="128" autocomplete="new-password" required>
+        <p id="change-password-msg" role="status" aria-live="polite"></p>
         <div class="btn-group">
-          <button id="username-cancel-btn" type="button" class="secondary-btn">取消</button>
-          <button id="username-save-btn" type="submit" class="primary-btn">保存</button>
+          <button id="change-password-cancel" type="button" class="secondary-btn">取消</button>
+          <button id="change-password-submit" type="submit" class="primary-btn">确认修改</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="user-info-dialog" aria-labelledby="user-info-title">
+      <div class="members-dialog-header">
+        <div>
+          <h2 id="user-info-title">用户信息</h2>
+          <p id="user-info-description"></p>
+        </div>
+        <button id="user-info-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="my-profile">
+        <div id="user-info-avatar" class="my-profile-avatar user-profile-avatar">
+          <span id="user-info-avatar-image" class="my-profile-avatar-image"></span>
+        </div>
+        <div class="my-profile-name-row">
+          <strong id="user-info-name"></strong>
+          <span id="user-info-role" class="role-badges"></span>
+        </div>
+        <p class="my-account-line">账户名：<span id="user-info-account"></span></p>
+      </div>
     </dialog>
 
     <dialog id="mute-dialog" aria-labelledby="mute-title">
